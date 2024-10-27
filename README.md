@@ -1,7 +1,7 @@
 # EnergyAwareLLVM
 
 ## Installation 
-**Note: This was tested on Ubuntu 20.04**
+**Note: This was tested on Ubuntu 20.04 and my Intel Mac**
 
 Create and activate conda environment:
 ```bash
