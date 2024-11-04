@@ -20,6 +20,13 @@ Install `CompilerGym`:
 pip install -U compiler_gym
 ```
 
+## Static Energy Estimation
+Our implementation was heavily based on [Neville Grech's Code](https://github.com/nevillegrech/llvm-energy/tree/master) adapted to use llvmlite.
+```bash
+cd llvm-energy
+python3 inferCR_converted.py ir_tests/test1.ll
+``` 
+
 ## Usage
 Run the testing script:
 ```bash
