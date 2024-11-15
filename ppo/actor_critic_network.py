@@ -52,10 +52,22 @@ class actor_critic_network(nn.Module):
         return action_probs
     
     def act(self, x):
-        action_probs = self.get_action_probs(x)
+        # action_probs = self.get_action_probs(x)
+        # dist = Categorical(action_probs)
+        # chosen_action = dist.sample()
+        # logprob_action = dist.log_prob(chosen_action)
+        
+        
+        output = self.forward(x)
+        
+        action_probs = torch.index_select(output, 1, torch.tensor(range(self.num_actions)))
         dist = Categorical(action_probs)
         chosen_action = dist.sample()
+        
         logprob_action = dist.log_prob(chosen_action)
-        return chosen_action.detach(), logprob_action.detach()
+        
+        state_val = torch.index_select(output, 1, torch.tensor([self.output_dim]))
+        
+        return chosen_action.detach(), logprob_action.detach(), state_val.detach()
         
         
