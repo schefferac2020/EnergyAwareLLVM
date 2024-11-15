@@ -20,6 +20,22 @@ Install `CompilerGym`:
 pip install -U compiler_gym
 ```
 
+Install Other Requirements
+```bash
+pip install -r requirements.txt
+```
+
+## Reinforcement Learning
+run the training code here:
+
+```bash
+cd ppo/
+python3 train.py
+```
+
+At the moment, the code uses the [Autophase](https://compilergym.com/llvm/index.html#autophase) observation space. 
+
+
 ## Static Energy Estimation
 Our implementation was heavily based on [Neville Grech's Code](https://github.com/nevillegrech/llvm-energy/tree/master) adapted to use llvmlite.
 ```bash
