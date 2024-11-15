@@ -16,6 +16,7 @@ import torch.optim as optim
 from compiler_gym_wrapper import env_wrapper
 from actor_critic_network import actor_critic_network
 from eval import Evaluation
+from tqdm import tqdm
 
 class RolloutBuffer:
     def __init__(self):
@@ -62,7 +63,7 @@ class PPO:
         self.optimizer = optim.Adam(self.actor_critic_net.parameters(), lr=self.learning_rate)
         self.mse_loss = nn.MSELoss()
         
-    def train(self, log_progress=False, progress_log_rate = 30*60, checkpoint_name=None):
+    def train(self, log_progress=False, progress_log_rate = 60*30, checkpoint_name=None):
         if checkpoint_name is not None:
             self.actor_critic_net.load_state_dict(torch.load("models/{0}.model".format(checkpoint_name)))
             print(f"Loaded checkpoint on {checkpoint_name}")
@@ -74,14 +75,15 @@ class PPO:
         rewards = []
         
         while True:
+            print(f"Collecting {self.trajectories_until_update} episodes of data...")
             self.collect_trajectories(self.trajectories_until_update)
+            print("Updating the Policy...")
             self.update()
             
             if log_progress and (time.time() - last_checkpoint > progress_log_rate):
                 torch.save(self.actor_critic_net.state_dict(), f"models/{self.name}.model")
-                geo_maxima, geo_averages = Evaluation.evaluate(self.benchmarks, self.name, print_progress=False,
-                                                               additional_steps_for_max=0, max_trials_per_benchmark=10,
-                                                               max_time_per_benchmark=10)
+                geo_maxima, geo_averages = Evaluation.evaluate(self.benchmarks, model_name=self.name, print_progress=False,
+                                                                max_trials_per_benchmark=10, max_time_per_benchmark=10)
 
                 rewards.append(geo_averages)
                 print(F"Geo of averages: {geo_averages}")
@@ -128,7 +130,7 @@ class PPO:
         advantages = rewards.detach() - old_state_values.detach()
         
         # Optimize for K epochs
-        for _ in range(self.EPOCHS):
+        for _ in tqdm(range(self.EPOCHS)):
             batch_size = len(old_states)
             sampled_indices = torch.tensor(random.sample(range(len(old_states)), batch_size))
             sampled_states = torch.index_select(old_states, 0, sampled_indices)

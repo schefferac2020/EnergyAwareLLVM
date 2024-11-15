@@ -22,10 +22,12 @@ class actor_critic_network(nn.Module):
         
     def forward(self, x):
         features = self.feature_extractor(x)
-        actions = self.action_layer(features)
-        action_probs = nn.functional.softmax(actions, dim=1)
+        
+        actions = self.action_layer(features)        
+        action_probs = nn.functional.softmax(actions, dim=0)
+        
         v = self.value_layer(features)
-        return torch.cat([action_probs, v], dim=1)
+        return torch.cat([action_probs, v], dim=-1)
         
     def get_state_value(self, x):
         f = self.feature_extractor(x)
@@ -40,7 +42,7 @@ class actor_critic_network(nn.Module):
         
         logprob_action = dist.log_prob(action)
         
-        state_val = torch.index_select(output, 1, torch.tensor([self.output_dim]))
+        state_val = torch.index_select(output, 1, torch.tensor([self.num_actions]))
         dist_entropy = dist.entropy()
         
         return logprob_action, state_val, dist_entropy
@@ -60,13 +62,13 @@ class actor_critic_network(nn.Module):
         
         output = self.forward(x)
         
-        action_probs = torch.index_select(output, 1, torch.tensor(range(self.num_actions)))
+        action_probs = torch.index_select(output, 0, torch.tensor(range(self.num_actions)))
         dist = Categorical(action_probs)
         chosen_action = dist.sample()
         
         logprob_action = dist.log_prob(chosen_action)
         
-        state_val = torch.index_select(output, 1, torch.tensor([self.output_dim]))
+        state_val = torch.index_select(output, 0, torch.tensor([self.num_actions]))
         
         return chosen_action.detach(), logprob_action.detach(), state_val.detach()
         

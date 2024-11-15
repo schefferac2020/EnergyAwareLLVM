@@ -13,11 +13,11 @@ from compiler_gym_wrapper import env_wrapper
 from actor_critic_network import actor_critic_network
 
 class Evaluation:
-    def geom_mean(self, input_list: List):
+    def geom_mean(input_list: List):
         output_list = np.array(input_list)
         return output_list.prod()**(1/len(output_list))
     
-    def evaluate(self, benchmarks, model_name, print_progress=True,
+    def evaluate(benchmarks, model_name, print_progress=True,
                  max_trials_per_benchmark=10, max_time_per_benchmark=10 * 1):
         if print_progress:
             print("Evaluating {0}:".format(model_name))
