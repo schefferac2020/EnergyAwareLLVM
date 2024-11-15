@@ -32,8 +32,10 @@ print("Training with these benchmarks:", " ".join(benchmarks), "\n--------------
 
 env = env_wrapper(benchmarks, max_episode_steps=200, steps_in_observation=True)
 
+log_rate_in_seconds = 5*60 # 5 minutes
+
 ppo_training = PPO(env, benchmarks, name="model_test_Nov15")
-ppo_training.train(log_progress=True, progress_log_rate=1)
+ppo_training.train(log_progress=True, progress_log_rate=log_rate_in_seconds)
 
 
 env.close()
