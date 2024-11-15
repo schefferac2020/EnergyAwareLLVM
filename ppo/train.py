@@ -31,9 +31,7 @@ benchmarks=["adpcm",
 print("Training with these benchmarks:", " ".join(benchmarks), "\n--------------")
 
 env = env_wrapper(benchmarks, max_episode_steps=200, steps_in_observation=True)
-print(env.observation_space['Inst2vecEmbeddingIndices'])
-env.close()
-exit(1)
+
 ppo_training = PPO(env, benchmarks, name="model_test_Nov15")
 ppo_training.train(log_progress=True, progress_log_rate=1)
 
