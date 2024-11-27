@@ -1,0 +1,44 @@
+from compiler_gym.envs.llvm import LlvmEnv
+from compiler_gym.spaces import Reward
+from compiler_gym.util.registration import register_reward
+import numpy as np
+import energy_estimate
+
+# Step 1: Define your custom reward class
+class MyCustomSpace(Reward):
+    def __init__(self, input_asm : str):
+        super().__init__(
+            name="MyCustomSpace",
+            # Specify the reward range. Adjust these as per your custom logic.
+            range=(-float("inf"), float("inf")),
+            default_value=0,
+        )
+        self.asm_code = input_asm
+
+    def reset(self, env: LlvmEnv):
+        # Optional: Reset any internal state before starting a new episode.
+        self.asm_code = ""
+
+    def __call__(self, env: LlvmEnv) -> float:
+        # Implement your custom reward logic here.
+        # For example, reward based on reduction in code size:
+        #code_size = env.observation["IrInstructionCount"]
+        #return -code_size  # Negative reward for larger code size
+        return energy_estimate.estimate_program_energy(self.asm_code)
+
+
+# Step 2: Register the reward space
+register_reward(name="llvm-v0/MyCustomSpace", reward=MyCustomSpace)
+
+# Step 3: Use the reward space in an environment
+if __name__ == "__main__":
+    with LlvmEnv() as env:
+        env.reset()
+        env.reward_space = "MyCustomSpace"  # Set your custom reward space
+
+        for i in range(10):  # Perform 10 steps
+            action = env.action_space.sample()
+            _, reward, done, info = env.step(action)
+            print(f"Step {i}: Action={action}, Reward={reward}")
+            if done:
+                break
