@@ -116,12 +116,12 @@ class env_wrapper(gym.Env):
         nrg_reward = self.calculate_normalized_energy_reward(self.previous_energy, new_energy, self.initial_energy)
         self.previous_energy = new_energy
         
-        
+        # TODO: change rewards if needed
         # reward = 0.5*bitcode_reward + 0.5*nrg_reward
         # reward = bitcode_reward
         reward = nrg_reward
         
-        print("Normalized Energy Reward:", reward)
+        # print("Normalized Energy Reward:", reward)
         
 
         

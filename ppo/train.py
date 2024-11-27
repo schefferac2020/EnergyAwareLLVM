@@ -29,14 +29,34 @@ benchmarks_all=["cbench-v1/adpcm",
             "cbench-v1/tiff2bw",
             "cbench-v1/tiffdither"]
 benchmarks_small = ["adpcm.decode"]
-benchmarks = benchmarks_small
+
+benchmarks_train = ["cbench-v1/adpcm",
+            "cbench-v1/crc32",
+            "cbench-v1/ghostscript",
+            "cbench-v1/ispell",
+            "cbench-v1/jpeg-d",
+            "cbench-v1/patricia",
+            "cbench-v1/rijndael",
+            "cbench-v1/stringsearch2",
+            "cbench-v1/tiff2rgba",
+            "cbench-v1/tiffmedian",
+            "cbench-v1/bitcount",
+            "cbench-v1/bzip2",
+            "cbench-v1/dijkstra",
+            "cbench-v1/jpeg-c",
+            "cbench-v1/qsort",
+            "cbench-v1/tiff2bw",
+            "cbench-v1/tiffdither"]
+
+benchmarks = benchmarks_train
 
 print("Training with these benchmarks:", " ".join(benchmarks), "\n--------------")
 
 env = env_wrapper(benchmarks, max_episode_steps=200, steps_in_observation=True)
 
-log_rate_in_seconds = 5 # 5 seconds
+log_rate_in_seconds = 600 # 5 seconds
 
+#TODO: Change name
 ppo_training = PPO(env, benchmarks, name="model_test_Nov27")
 ppo_training.train(log_progress=True, progress_log_rate=log_rate_in_seconds)
 
