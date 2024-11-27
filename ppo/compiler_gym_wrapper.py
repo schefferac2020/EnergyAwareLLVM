@@ -7,7 +7,7 @@ import os
 from energy_estimate import estimate_program_energy
 
 
-class llvm_wrapper(gym.Env):
+class env_wrapper(gym.Env):
     """
     benchmarks: Names of programs in cbench-v1 which are to be cycled through in training
     max_episode_steps: If specified: Number of maximum steps an episode can last up to. Otherwise no episode limit
@@ -68,35 +68,37 @@ class llvm_wrapper(gym.Env):
             action = self.action_mapping[action]
 
         observation, reward, done, info = self.env.step(action)
-        print("This is the observation:", observation)
-        ir_string = self.env.observation["Ir"]
-        input_bitcode_file = self.env.observation["BitcodeFile"]
-        output_asm_file = os.path.join(os.path.dirname(input_bitcode_file), "asm.s")
+        compute_energy = False
+        if compute_energy:
         
-        # Compile bitcode to ASM using clang
-        '''clang -S --target=arm-none-eabi -march=armv7e-m -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -nostdlib ir_code.bc -o file.s'''
-        subprocess.run([
-            'clang',
-            '-S',
-            '--target=arm-none-eabi',
-            '-march=armv7e-m',
-            '-mcpu=cortex-m4',
-            '-mfpu=fpv4-sp-d16',
-            '-mfloat-abi=hard',
-            '-mthumb',
-            '-nostdlib',
-            input_bitcode_file,
-            '-o',
-            output_asm_file
-        ], check=True, capture_output=True)
-        
-        with open(output_asm_file, "r") as file:
-            # Read the entire file content as a string
-            asm_code = file.read()
-        
-            # print("asm contents:", asm_code)
-            print("Estimated energy:", estimate_program_energy(asm_code))
-            print("Estimated energy:", estimate_program_energy(asm_code).total_energy)
+            ir_string = self.env.observation["Ir"]
+            input_bitcode_file = self.env.observation["BitcodeFile"]
+            output_asm_file = os.path.join(os.path.dirname(input_bitcode_file), "asm.s")
+            
+            # Compile bitcode to ASM using clang
+            '''clang -S --target=arm-none-eabi -march=armv7e-m -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -nostdlib ir_code.bc -o file.s'''
+            subprocess.run([
+                'clang',
+                '-S',
+                '--target=arm-none-eabi',
+                '-march=armv7e-m',
+                '-mcpu=cortex-m4',
+                '-mfpu=fpv4-sp-d16',
+                '-mfloat-abi=hard',
+                '-mthumb',
+                '-nostdlib',
+                input_bitcode_file,
+                '-o',
+                output_asm_file
+            ], check=True, capture_output=True)
+            
+            with open(output_asm_file, "r") as file:
+                # Read the entire file content as a string
+                asm_code = file.read()
+            
+                # print("asm contents:", asm_code)
+                print("Estimated energy:", estimate_program_energy(asm_code))
+                print("Estimated energy:", estimate_program_energy(asm_code).total_energy)
 
 
         if self.patience is not None:

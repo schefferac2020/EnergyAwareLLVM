@@ -24,10 +24,10 @@ class actor_critic_network(nn.Module):
         features = self.feature_extractor(x)
         
         actions = self.action_layer(features)        
-        action_probs = nn.functional.softmax(actions, dim=0)
+        action_probs = nn.functional.softmax(actions, dim=1)
         
         v = self.value_layer(features)
-        return torch.cat([action_probs, v], dim=-1)
+        return torch.cat([action_probs, v], dim=1)
         
     def get_state_value(self, x):
         f = self.feature_extractor(x)
@@ -50,26 +50,14 @@ class actor_critic_network(nn.Module):
     def get_action_probs(self, x):
         features = self.feature_extractor(x)
         action_vals = self.action_layer(features)
-        action_probs = nn.functional.softmax(action_vals, dim=1) # this could be wrong right? 
+        action_probs = nn.functional.softmax(action_vals, dim=0) # this could be wrong right? 
         return action_probs
     
     def act(self, x):
-        # action_probs = self.get_action_probs(x)
-        # dist = Categorical(action_probs)
-        # chosen_action = dist.sample()
-        # logprob_action = dist.log_prob(chosen_action)
-        
-        
-        output = self.forward(x)
-        
-        action_probs = torch.index_select(output, 0, torch.tensor(range(self.num_actions)))
+        action_probs = self.get_action_probs(x)
         dist = Categorical(action_probs)
         chosen_action = dist.sample()
-        
         logprob_action = dist.log_prob(chosen_action)
-        
-        state_val = torch.index_select(output, 0, torch.tensor([self.num_actions]))
-        
-        return chosen_action.detach(), logprob_action.detach(), state_val.detach()
+        return chosen_action.detach(), logprob_action.detach()
         
         

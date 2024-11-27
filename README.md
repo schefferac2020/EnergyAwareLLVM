@@ -33,7 +33,7 @@ cd ppo/
 python3 train.py
 ```
 
-At the moment, the code uses the [Autophase](https://compilergym.com/llvm/index.html#autophase) observation space. 
+At the moment, the code uses the [Autophase](https://compilergym.com/llvm/index.html#autophase) observation space. Base code was adapted from [nikhilbarhate99](https://github.com/nikhilbarhate99/PPO-PyTorch/blob/master/PPO.py) and [ymahlau](https://github.com/ymahlau/ppo_compiler_gym/tree/main/ppo.py)
 
 
 ## Static Energy Estimation

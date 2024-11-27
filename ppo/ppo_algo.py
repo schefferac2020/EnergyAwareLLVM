@@ -1,6 +1,6 @@
 '''
 PPO training algorithm
-heavily derived from: https://github.com/nikhilbarhate99/PPO-PyTorch/blob/master/PPO.py
+based on: https://github.com/nikhilbarhate99/PPO-PyTorch/blob/master/PPO.py
 '''
 
 import random
@@ -24,7 +24,7 @@ class RolloutBuffer:
         self.states=[]
         self.logprobs=[]
         self.rewards=[]
-        self.state_values = []
+        # self.state_values = []
         self.dones=[]
         
     def clear(self):
@@ -32,15 +32,15 @@ class RolloutBuffer:
         del self.actions[:]
         del self.logprobs[:]
         del self.rewards[:]
-        del self.state_values[:]
+        # del self.state_values[:]
         del self.dones[:]
         
-    def add_data(self, state, action, logprob, reward, state_value, done):
+    def add_data(self, state, action, logprob, reward, done):
         self.states.append(state)
         self.actions.append(action)
         self.logprobs.append(logprob)
         self.rewards.append(reward)
-        self.state_values.append(state_value)
+        # self.state_values.append(state_value)
         self.dones.append(done)
 
 class PPO:
@@ -101,57 +101,104 @@ class PPO:
             done = False
             while not done:
                 obs = torch.tensor(obs).float() # on CPU
-                action, log_prob, state_val = self.actor_critic_net.act(obs)
+                action, log_prob = self.actor_critic_net.act(obs)
                 new_obs, reward, done, info = self.env.step(action.item())
-                self.buffer.add_data(obs, action, log_prob, reward, state_val, done)
+                self.buffer.add_data(obs, action, log_prob, reward, done)
                 obs = new_obs
-                
+    
+    # TODO: below is the other update that I was working on. IDK if it was the real cause of the issue.
+    # def update(self):
+    #     # Calculated the rollout discounted rewards:
+    #     rewards = []
+    #     discounted_reward = 0
+    #     for reward, is_terminal in zip(reversed(self.buffer.rewards), reversed(self.buffer.dones)):
+    #         if is_terminal:
+    #             discounted_reward
+    #         discounted_reward = reward + (self.gamma*discounted_reward)
+    #         rewards.insert(0, discounted_reward) # add to front
+    
+    #     # Normalize
+    #     rewards = torch.tensor(rewards, dtype=torch.float32)
+    #     rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
+
+    #     # Convert buffer lists to tensors
+    #     old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach()
+    #     old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach()
+    #     old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach()
+    #     old_state_values = torch.squeeze(torch.stack(self.buffer.state_values, dim=0)).detach()
+        
+    #     # calculate advantages
+    #     advantages = rewards.detach() - old_state_values.detach()
+        
+    #     # Optimize for K epochs
+    #     for _ in tqdm(range(self.EPOCHS)):
+    #         batch_size = len(old_states)
+    #         sampled_indices = torch.tensor(random.sample(range(len(old_states)), batch_size))
+    #         sampled_states = torch.index_select(old_states, 0, sampled_indices)
+    #         sampled_actions = torch.index_select(old_actions, 0, sampled_indices)
+    #         sampled_logprobs = torch.index_select(old_logprobs, 0, sampled_indices)
+    #         sampled_advantages = torch.index_select(advantages, 0, sampled_indices)
+    #         sampled_state_values = torch.index_select(old_state_values, 0, sampled_indices) # TODO: do we need this? 
+    #         sampled_rewards = torch.index_select(rewards, 0, sampled_indices)
+            
+    #         logprobs, state_values, dist_entropies = self.actor_critic_net.evaluate(sampled_states, sampled_actions)
+    #         state_values = torch.squeeze(state_values)
+            
+    #         ratios = torch.exp(logprobs - sampled_logprobs.detach())
+            
+    #         surr1 = ratios * sampled_advantages
+    #         surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * sampled_advantages
+            
+    #         loss = -torch.min(surr1, surr2) + self.loss_mse_fac * self.mse_loss(state_values, sampled_rewards) \
+    #                - self.loss_entr_fac*dist_entropies
+
+    #         self.optimizer.zero_grad()
+    #         loss.mean().backward()
+    #         self.optimizer.step()
+    #     self.buffer.clear()
+    
     def update(self):
-        # Calculated the rollout discounted rewards:
-        rewards = []
-        discounted_reward = 0
+        # Calc Advantages
+        xpctd_returns = []
+        current_xpctd_return = 0
         for reward, is_terminal in zip(reversed(self.buffer.rewards), reversed(self.buffer.dones)):
             if is_terminal:
-                discounted_reward
-            discounted_reward = reward + (self.gamma*discounted_reward)
-            rewards.insert(0, discounted_reward) # add to front
-    
-        # Normalize
-        rewards = torch.tensor(rewards, dtype=torch.float32)
-        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
+                current_xpctd_return = 0
+            current_xpctd_return = reward + current_xpctd_return
+            xpctd_returns.insert(0, current_xpctd_return)
+        xpctd_returns = torch.tensor(xpctd_returns)
+        xpctd_returns = (xpctd_returns - xpctd_returns.mean()) / (xpctd_returns.std() + 1e-7)
 
-        # Convert buffer lists to tensors
-        old_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach()
-        old_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach()
-        old_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach()
-        old_state_values = torch.squeeze(torch.stack(self.buffer.state_values, dim=0)).detach()
-        
-        # calculate advantages
-        advantages = rewards.detach() - old_state_values.detach()
-        
-        # Optimize for K epochs
-        for _ in tqdm(range(self.EPOCHS)):
-            batch_size = len(old_states)
-            sampled_indices = torch.tensor(random.sample(range(len(old_states)), batch_size))
-            sampled_states = torch.index_select(old_states, 0, sampled_indices)
-            sampled_actions = torch.index_select(old_actions, 0, sampled_indices)
-            sampled_logprobs = torch.index_select(old_logprobs, 0, sampled_indices)
-            sampled_advantages = torch.index_select(advantages, 0, sampled_indices)
-            sampled_state_values = torch.index_select(old_state_values, 0, sampled_indices) # TODO: do we need this? 
-            sampled_rewards = torch.index_select(rewards, 0, sampled_indices)
-            
+        rollouts_states = torch.squeeze(torch.stack(self.buffer.states, dim=0)).detach()
+        rollouts_actions = torch.squeeze(torch.stack(self.buffer.actions, dim=0)).detach()
+        rollouts_logprobs = torch.squeeze(torch.stack(self.buffer.logprobs, dim=0)).detach()
+
+        # Perform update
+        for _ in range(self.EPOCHS):
+            batch_size = len(rollouts_states)
+
+            sampled_indices = torch.tensor(random.sample(range(len(rollouts_states)), batch_size))
+            sampled_states = torch.index_select(rollouts_states, 0, sampled_indices)
+            sampled_actions = torch.index_select(rollouts_actions, 0, sampled_indices)
+            sampled_logprobs = torch.index_select(rollouts_logprobs, 0, sampled_indices)
+            sampled_xpctd_returns = torch.index_select(xpctd_returns, 0, sampled_indices)
+
             logprobs, state_values, dist_entropies = self.actor_critic_net.evaluate(sampled_states, sampled_actions)
+
             state_values = torch.squeeze(state_values)
-            
-            ratios = torch.exp(logprobs - sampled_logprobs.detach())
-            
-            surr1 = ratios * sampled_advantages
-            surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * sampled_advantages
-            
-            loss = -torch.min(surr1, surr2) + self.loss_mse_fac * self.mse_loss(state_values, sampled_rewards) \
-                   - self.loss_entr_fac*dist_entropies
+
+            prob_ratios = torch.exp(logprobs - sampled_logprobs)
+
+            advantages = (sampled_xpctd_returns - state_values).detach()
+
+            surr1 = prob_ratios * advantages
+            surr2 = torch.clamp(prob_ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
+
+            loss = -torch.min(surr1, surr2) + self.loss_mse_fac * self.mse_loss(state_values, sampled_xpctd_returns) \
+                   - self.loss_entr_fac * dist_entropies
 
             self.optimizer.zero_grad()
             loss.mean().backward()
             self.optimizer.step()
+
         self.buffer.clear()

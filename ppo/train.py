@@ -5,7 +5,7 @@ from compiler_gym_wrapper import env_wrapper
 from ppo_algo import PPO
 
 
-benchmarks=["adpcm",
+benchmarks_all=["adpcm",
             "blowfish",
             "crc32",
             "ghostscript",
@@ -28,13 +28,16 @@ benchmarks=["adpcm",
             "stringsearch",
             "tiff2bw",
             "tiffdither"]
+benchmarks_small = ["qsort", "bitcount"]
+benchmarks = benchmarks_all
+
 print("Training with these benchmarks:", " ".join(benchmarks), "\n--------------")
 
 env = env_wrapper(benchmarks, max_episode_steps=200, steps_in_observation=True)
 
-log_rate_in_seconds = 5*60 # 5 minutes
+log_rate_in_seconds = 5 # 5 seconds
 
-ppo_training = PPO(env, benchmarks, name="model_test_Nov15")
+ppo_training = PPO(env, benchmarks, name="model_test_Nov27")
 ppo_training.train(log_progress=True, progress_log_rate=log_rate_in_seconds)
 
 
