@@ -21,7 +21,7 @@ class env_wrapper(gym.Env):
 
     def __init__(self, benchmarks, max_episode_steps=None, steps_in_observation=False, patience=None,
                  allowed_actions=None):
-        self.env = gym.make("llvm-autophase-ic-v0", benchmark="cbench-v1/{0}".format(benchmarks[0]))
+        self.env = gym.make("llvm-autophase-ic-v0", benchmark="{0}".format(benchmarks[0]))
         self.benchmarks = benchmarks
 
         # patience
@@ -66,7 +66,7 @@ class env_wrapper(gym.Env):
         idx = random.randint(0, -1 + len(self.benchmarks))
         print("Switched to {0}".format(self.benchmarks[idx]))
         self.env.close()
-        self.env = gym.make("llvm-autophase-ic-v0", benchmark="cbench-v1/{0}".format(self.benchmarks[idx]))
+        self.env = gym.make("llvm-autophase-ic-v0", benchmark="{0}".format(self.benchmarks[idx]))
 
     def calculate_current_energy(self):
         '''Statically estimates the current energy of the current state'''
