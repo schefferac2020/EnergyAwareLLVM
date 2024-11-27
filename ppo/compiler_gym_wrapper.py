@@ -99,7 +99,6 @@ class env_wrapper(gym.Env):
 
     def calculate_normalized_energy_reward(self, previous_energy, new_energy, initial):
         # Need energy of prev and current state and original energy
-        
         return (previous_energy - new_energy)/initial
         
 

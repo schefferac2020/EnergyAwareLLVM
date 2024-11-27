@@ -28,8 +28,8 @@ benchmarks_all=["adpcm",
             "stringsearch",
             "tiff2bw",
             "tiffdither"]
-benchmarks_small = ["qsort", "bitcount"]
-benchmarks = benchmarks_all
+benchmarks_small = ["adpcm.decode"]
+benchmarks = benchmarks_small
 
 print("Training with these benchmarks:", " ".join(benchmarks), "\n--------------")
 
