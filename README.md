@@ -25,6 +25,13 @@ Install Other Requirements
 pip install -r requirements.txt
 ```
 
+More requirements that may need to be installed, depending on your system:
+```
+libtinfo5
+clang
+
+```
+
 ## Reinforcement Learning
 run the training code here:
 
