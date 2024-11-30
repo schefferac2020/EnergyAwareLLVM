@@ -18,7 +18,13 @@ eval_benchmarks = ["cbench-v1/susan",
 
 env = env_wrapper(eval_benchmarks, max_episode_steps=200, steps_in_observation=True)
 
-# TODO: Remember to change the reward in compiler_gym_wrapper
+# TODO: Remember to change the reward in compiler_gym_wrapper and evaluate_baseline.
 
-geo_maxima, geo_averages = Evaluation.evaluate(eval_benchmarks, model_name=model_name, print_progress=True,
-                                                                max_trials_per_benchmark=10, max_time_per_benchmark=10)
+result, performances = Evaluation.evaluate_baseline(eval_benchmarks, opt_mode="-O3")
+result, performances = Evaluation.evaluate_baseline(eval_benchmarks, opt_mode="-Oz")
+
+print(f"O3 results: {result}, {performances}")
+print(f"Oz results: {result}, {performances}")
+
+# geo_maxima, geo_averages, _ = Evaluation.evaluate(eval_benchmarks, model_name=model_name, print_progress=True,
+                                                                # max_trials_per_benchmark=10, max_time_per_benchmark=10)
