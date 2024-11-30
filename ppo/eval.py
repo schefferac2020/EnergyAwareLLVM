@@ -37,11 +37,13 @@ class Evaluation:
             obs = env.reset()
             if opt_mode == '-Oz':
                 bitmode = "ObjectTextSizeOz"
-            else if opt_mode == '-O3':
+            elif opt_mode == '-O3':
                 bitmode = "ObjectTextSizeO3"
 
             initial_energy = env.initial_energy
-            initial_bitcode = env.env.observation[bitmode]
+            initial_bitcode = env.env.observation["ObjectTextSizeBytes"]
+            
+            bitcode_reward = (initial_bitcode - env.env.observation[bitmode]) / initial_bitcode
 
             input_bitcode_file = env.env.observation["BitcodeFile"]
             optimized_bitcode_file = os.path.join(os.path.dirname(input_bitcode_file), "opt.bc")
@@ -79,11 +81,6 @@ class Evaluation:
             
             total_energy = estimate_program_energy(asm_code).total_energy
             nrg_reward = (initial_energy - total_energy)/ initial_energy
-
-            # hack to calculate bitsize after optimization
-            post_env = env_wrapper([optimized_bitcode_file], max_episode_steps=episode_len, steps_in_observation=True)
-            post_env.reset()
-            bitcode_reward = (initial_bitcode - post_env.env.observation[bitmode]) / initial_bitcode
 
             # TODO: change rewards if needed
             reward = bitcode_reward
