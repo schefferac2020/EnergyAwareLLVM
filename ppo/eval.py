@@ -88,9 +88,7 @@ class Evaluation:
             
             performances.append(reward)
 
-            env.close()
-            post_env.close()
-            
+            env.close()            
         return Evaluation.geom_mean(performances), performances
 
     def evaluate(benchmarks, model_name, print_progress=True,
