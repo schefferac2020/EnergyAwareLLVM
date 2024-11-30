@@ -20,6 +20,10 @@ class Evaluation:
         output_list = np.array(input_list)
         return output_list.prod()**(1/len(output_list))
     
+    def arith_mean(input_list: List):
+        output_list = np.array(input_list)
+        return output_list.sum() / len(output_list)
+    
     def evaluate_baseline(benchmarks, print_progress=True, opt_mode='-Oz'):
         if print_progress:
             print("Evaluating {0}:".format(opt_mode))
@@ -31,7 +35,13 @@ class Evaluation:
             # Not stepping with the env
             env = env_wrapper([benchmark], max_episode_steps=episode_len, steps_in_observation=True)
             obs = env.reset()
+            if opt_mode == '-Oz':
+                bitmode = "ObjectTextSizeOz"
+            else if opt_mode == '-O3':
+                bitmode = "ObjectTextSizeO3"
+
             initial_energy = env.initial_energy
+            initial_bitcode = env.env.observation[bitmode]
 
             input_bitcode_file = env.env.observation["BitcodeFile"]
             optimized_bitcode_file = os.path.join(os.path.dirname(input_bitcode_file), "opt.bc")
@@ -70,11 +80,19 @@ class Evaluation:
             total_energy = estimate_program_energy(asm_code).total_energy
             nrg_reward = (initial_energy - total_energy)/ initial_energy
 
+            # hack to calculate bitsize after optimization
+            post_env = env_wrapper([optimized_bitcode_file], max_episode_steps=episode_len, steps_in_observation=True)
+            post_env.reset()
+            bitcode_reward = (initial_bitcode - post_env.env.observation[bitmode]) / initial_bitcode
+
             # TODO: change rewards if needed
-            # reward = bitcode_reward
-            reward = nrg_reward
+            reward = bitcode_reward
+            # reward = nrg_reward
             
             performances.append(reward)
+
+            env.close()
+            post_env.close()
             
         return Evaluation.geom_mean(performances), performances
 
