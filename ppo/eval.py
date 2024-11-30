@@ -20,7 +20,7 @@ class Evaluation:
         output_list = np.array(input_list)
         return output_list.prod()**(1/len(output_list))
     
-    def evaluate_baseline(benchmarks, print_progress=True, opt_mode="-Oz"):
+    def evaluate_baseline(benchmarks, print_progress=True, opt_mode='-Oz'):
         if print_progress:
             print("Evaluating {0}:".format(opt_mode))
 
@@ -33,15 +33,15 @@ class Evaluation:
             obs = env.reset()
             initial_energy = env.initial_energy
 
-            input_ir_file = env.env.observation["IR"]
-            optimized_bitcode_file = os.path.join(os.path.dirname(input_ir_file), "opt.bc")
-            output_asm_file = os.path.join(os.path.dirname(input_ir_file), "asm.s")
+            input_bitcode_file = env.env.observation["BitcodeFile"]
+            optimized_bitcode_file = os.path.join(os.path.dirname(input_bitcode_file), "opt.bc")
+            output_asm_file = os.path.join(os.path.dirname(input_bitcode_file), "asm.s")
 
             # Apply opt_mode to the file
             subprocess.run([
                 'opt',
-                input_ir_file,
                 opt_mode,
+                input_bitcode_file,
                 '-o',
                 optimized_bitcode_file
             ], check=True, capture_output=True)
@@ -75,9 +75,6 @@ class Evaluation:
             reward = nrg_reward
             
             performances.append(reward)
-
-        if print_progress:
-            print("Geometric mean of maxima/average: {0}".format(Evaluation.geom_mean(performances[:, 0])))
             
         return Evaluation.geom_mean(performances), performances
 
