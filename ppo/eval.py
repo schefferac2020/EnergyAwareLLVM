@@ -39,11 +39,13 @@ class Evaluation:
                 bitmode = "ObjectTextSizeOz"
             elif opt_mode == '-O3':
                 bitmode = "ObjectTextSizeO3"
+            else:
+                raise NotImplementedError('Invalid Optimization level')
 
             initial_energy = env.initial_energy
             initial_bitcode = env.env.observation["ObjectTextSizeBytes"]
-            
-            bitcode_reward = (env.env.observation[bitmode] - initial_bitcode) / initial_bitcode
+
+            bitcode_reward = (initial_bitcode - env.env.observation[bitmode]) / initial_bitcode
 
             input_bitcode_file = env.env.observation["BitcodeFile"]
             optimized_bitcode_file = os.path.join(os.path.dirname(input_bitcode_file), "opt.bc")
@@ -89,8 +91,9 @@ class Evaluation:
             performances.append(reward)
 
             env.close()
-            
-        return Evaluation.geom_mean(performances), performances
+        
+        # Switching to arithmetic mean because of negatives
+        return Evaluation.arith_mean(performances), performances
 
     def evaluate(benchmarks, model_name, print_progress=True,
                  max_trials_per_benchmark=10, max_time_per_benchmark=10 * 1, additional_steps_for_max=0):
@@ -161,9 +164,10 @@ class Evaluation:
                 
         performances = np.array(performances)
         if print_progress:
-            print("Geometric mean of maxima: {0}".format(Evaluation.geom_mean(performances[:, 0])))
-            print("Geometric mean of averages: {0}".format(Evaluation.geom_mean(performances[:, 1])))
-            
-        return Evaluation.geom_mean(performances[:, 0]), Evaluation.geom_mean(performances[:, 1]), performances
+            print("Arithmetric mean of maxima: {0}".format(Evaluation.arith_mean(performances[:, 0])))
+            print("Arithmetric mean of averages: {0}".format(Evaluation.arith_mean(performances[:, 1])))
+        
+        # Switching to arithmetic mean because of negatives
+        return Evaluation.arith_mean(performances[:, 0]), Evaluation.arith_mean(performances[:, 1]), performances
 
                     
