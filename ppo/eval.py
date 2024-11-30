@@ -43,7 +43,7 @@ class Evaluation:
             initial_energy = env.initial_energy
             initial_bitcode = env.env.observation["ObjectTextSizeBytes"]
             
-            bitcode_reward = (initial_bitcode - env.env.observation[bitmode]) / initial_bitcode
+            bitcode_reward = (env.env.observation[bitmode] - initial_bitcode) / initial_bitcode
 
             input_bitcode_file = env.env.observation["BitcodeFile"]
             optimized_bitcode_file = os.path.join(os.path.dirname(input_bitcode_file), "opt.bc")
@@ -88,7 +88,8 @@ class Evaluation:
             
             performances.append(reward)
 
-            env.close()            
+            env.close()
+            
         return Evaluation.geom_mean(performances), performances
 
     def evaluate(benchmarks, model_name, print_progress=True,
