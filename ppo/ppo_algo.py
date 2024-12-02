@@ -17,6 +17,7 @@ from compiler_gym_wrapper import env_wrapper
 from actor_critic_network import actor_critic_network
 from eval import Evaluation
 from tqdm import tqdm
+import sys
 
 class RolloutBuffer:
     def __init__(self):
@@ -94,6 +95,7 @@ class PPO:
                 last_checkpoint = time.time()
             
             self.env.switch_benchmark()
+            sys.stdout.flush()
         
     def collect_trajectories(self, num_traj):
         for _ in range(num_traj):
