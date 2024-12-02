@@ -57,8 +57,11 @@ env = env_wrapper(benchmarks, max_episode_steps=200, steps_in_observation=True)
 log_rate_in_seconds = 600 # 5 seconds
 
 #TODO: Change name
-ppo_training = PPO(env, benchmarks, name="model_test_Nov27")
-ppo_training.train(log_progress=True, progress_log_rate=log_rate_in_seconds)
+ppo_training = PPO(env, benchmarks, name="energy_reward_model_Nov30")
+ppo_training.train(log_progress=True, progress_log_rate=log_rate_in_seconds, checkpoint_name="energy_reward_model_Nov30")
 
 
 env.close()
+
+# started training at 10:25 am
+# still training at 12:36 am... 14 hours, wtf
