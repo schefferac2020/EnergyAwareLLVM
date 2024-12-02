@@ -36,14 +36,14 @@ class Evaluation:
             env = env_wrapper([benchmark], max_episode_steps=episode_len, steps_in_observation=True)
             obs = env.reset()
             if opt_mode == '-Oz':
-                bitmode = "ObjectTextSizeOz"
+                bitmode = "IrInstructionCountOz"
             elif opt_mode == '-O3':
-                bitmode = "ObjectTextSizeO3"
+                bitmode = "IrInstructionCountO3"
             else:
                 raise NotImplementedError('Invalid Optimization level')
 
             initial_energy = env.initial_energy
-            initial_bitcode = env.env.observation["ObjectTextSizeBytes"]
+            initial_bitcode = env.env.observation["IrInstructionCount"]
 
             bitcode_reward = (initial_bitcode - env.env.observation[bitmode]) / initial_bitcode
 
