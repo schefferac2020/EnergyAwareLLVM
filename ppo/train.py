@@ -57,7 +57,7 @@ env = env_wrapper(benchmarks, max_episode_steps=200, steps_in_observation=True)
 log_rate_in_seconds = 600 # 5 seconds
 
 #TODO: Change name
-ppo_training = PPO(env, benchmarks, name="bitcode_100reward_Nov29")
+ppo_training = PPO(env, benchmarks, name="bitcode_100reward_Dec012")
 ppo_training.train(log_progress=True, progress_log_rate=log_rate_in_seconds)
 
 

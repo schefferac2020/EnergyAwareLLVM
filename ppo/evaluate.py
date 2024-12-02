@@ -8,7 +8,7 @@ from eval import Evaluation
 
 # TODO: plot and visual representation
 # TODO: change model name
-model_name = "defaultNov25" # idek what this is
+model_name = "defaultDec01bitcode2" # idek what this is
 eval_benchmarks = ["cbench-v1/susan",
                    "cbench-v1/lame",
                    "cbench-v1/stringsearch",
