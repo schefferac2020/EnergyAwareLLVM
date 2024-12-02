@@ -82,7 +82,7 @@ class PPO:
             
             if log_progress and (time.time() - last_checkpoint > progress_log_rate):
                 torch.save(self.actor_critic_net.state_dict(), f"models/{self.name}.model")
-                geo_maxima, geo_averages = Evaluation.evaluate(self.benchmarks, model_name=self.name, print_progress=False,
+                geo_maxima, geo_averages, _ = Evaluation.evaluate(self.benchmarks, model_name=self.name, print_progress=False,
                                                                 max_trials_per_benchmark=10, max_time_per_benchmark=10)
 
                 rewards.append(geo_averages)
