@@ -1,6 +1,8 @@
 
 import random
 import time
+import subprocess
+import os
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -11,12 +13,88 @@ import torch.optim as optim
 
 from compiler_gym_wrapper import env_wrapper
 from actor_critic_network import actor_critic_network
+from energy_estimate import estimate_program_energy
 
 class Evaluation:
     def geom_mean(input_list: List):
         output_list = np.array(input_list)
         return output_list.prod()**(1/len(output_list))
     
+    def arith_mean(input_list: List):
+        output_list = np.array(input_list)
+        return output_list.sum() / len(output_list)
+    
+    def evaluate_baseline(benchmarks, print_progress=True, opt_mode='-Oz'):
+        if print_progress:
+            print("Evaluating {0}:".format(opt_mode))
+
+        episode_len = 300
+        performances=[]
+
+        for benchmark in benchmarks:
+            # Not stepping with the env
+            env = env_wrapper([benchmark], max_episode_steps=episode_len, steps_in_observation=True)
+            obs = env.reset()
+            if opt_mode == '-Oz':
+                bitmode = "ObjectTextSizeOz"
+            elif opt_mode == '-O3':
+                bitmode = "ObjectTextSizeO3"
+            else:
+                raise NotImplementedError('Invalid Optimization level')
+
+            initial_energy = env.initial_energy
+            initial_bitcode = env.env.observation["ObjectTextSizeBytes"]
+
+            bitcode_reward = (initial_bitcode - env.env.observation[bitmode]) / initial_bitcode
+
+            input_bitcode_file = env.env.observation["BitcodeFile"]
+            optimized_bitcode_file = os.path.join(os.path.dirname(input_bitcode_file), "opt.bc")
+            output_asm_file = os.path.join(os.path.dirname(input_bitcode_file), "asm.s")
+
+            # Apply opt_mode to the file
+            subprocess.run([
+                'opt',
+                opt_mode,
+                input_bitcode_file,
+                '-o',
+                optimized_bitcode_file
+            ], check=True, capture_output=True)
+            
+            # Compile bitcode to ASM using clang
+            '''clang -S --target=arm-none-eabi -march=armv7e-m -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -nostdlib ir_code.bc -o file.s'''
+            subprocess.run([
+                'clang',
+                '-S',
+                '--target=arm-none-eabi',
+                '-march=armv7e-m',
+                '-mcpu=cortex-m4',
+                '-mfpu=fpv4-sp-d16',
+                '-mfloat-abi=hard',
+                '-mthumb',
+                '-nostdlib',
+                optimized_bitcode_file,
+                '-o',
+                output_asm_file
+            ], check=True, capture_output=True)
+            
+            with open(output_asm_file, "r") as file:
+                # Read the entire file content as a string
+                asm_code = file.read()
+            
+            total_energy = estimate_program_energy(asm_code).total_energy
+            nrg_reward = (initial_energy - total_energy)/ initial_energy
+
+            # TODO: change rewards if needed
+            reward = bitcode_reward
+            # reward = nrg_reward
+            
+            performances.append(reward)
+
+            env.close()
+        
+        # Switching to arithmetic mean because of negatives
+        return Evaluation.arith_mean(performances), performances
+
     def evaluate(benchmarks, model_name, print_progress=True,
                  max_trials_per_benchmark=10, max_time_per_benchmark=10 * 1, additional_steps_for_max=0):
         if print_progress:
@@ -86,9 +164,10 @@ class Evaluation:
                 
         performances = np.array(performances)
         if print_progress:
-            print("Geometric mean of maxima: {0}".format(Evaluation.geom_mean(performances[:, 0])))
-            print("Geometric mean of averages: {0}".format(Evaluation.geom_mean(performances[:, 1])))
-            
-        return Evaluation.geom_mean(performances[:, 0]), Evaluation.geom_mean(performances[:, 1])
+            print("Arithmetric mean of maxima: {0}".format(Evaluation.arith_mean(performances[:, 0])))
+            print("Arithmetric mean of averages: {0}".format(Evaluation.arith_mean(performances[:, 1])))
+        
+        # Switching to arithmetic mean because of negatives
+        return Evaluation.arith_mean(performances[:, 0]), Evaluation.arith_mean(performances[:, 1]), performances
 
                     
