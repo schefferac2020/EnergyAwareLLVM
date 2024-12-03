@@ -111,22 +111,23 @@ class env_wrapper(gym.Env):
             action = self.action_mapping[action]
 
         # energy before
-        observation, bitcode_reward, done, info = self.env.step(action)
+        self.bitcode_reward = 0
+        observation, self.bitcode_reward, done, info = self.env.step(action)
         # energy after
         
         if self.reward_type != "SIZE":
             new_energy = self.calculate_current_energy()
         
-            nrg_reward = self.calculate_normalized_energy_reward(self.previous_energy, new_energy, self.initial_energy)
+            self.nrg_reward = self.calculate_normalized_energy_reward(self.previous_energy, new_energy, self.initial_energy)
             self.previous_energy = new_energy
         
 
         if self.reward_type == "SIZE":
-            reward = bitcode_reward
+            reward = self.bitcode_reward
         elif self.reward_type == "NRG":
-            reward = nrg_reward
+            reward = self.nrg_reward
         elif self.reward_type == "BOTH":
-            reward = 0.5*bitcode_reward + 0.5*nrg_reward
+            reward = 0.5*self.bitcode_reward + 0.5*self.nrg_reward
         
         if self.patience is not None:
             self.fifo.append(reward)
@@ -150,6 +151,13 @@ class env_wrapper(gym.Env):
         else:
             return observation, reward, done, info
 
+    def get_energy_reward(self):
+        # assert(self.reward_type == "NRG" or self.reward_type == "BOTH")
+        return self.nrg_reward
+
+    def get_size_reward(self):
+        return self.bitcode_reward
+    
     def reset(self):
         self.fifo = []
         if self.limited_time:

@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from compiler_gym_wrapper import env_wrapper
-from actor_critic_network import actor_critic_network
+from actor_critic_network import policy_critic_network
 from energy_estimate import estimate_program_energy
 
 class Evaluation:
@@ -104,7 +104,10 @@ class Evaluation:
         return Evaluation.arith_mean(performances), performances
 
     def evaluate(benchmarks, model_name, is_random_policy=False, print_progress=True,
-                 max_trials_per_benchmark=10, max_time_per_benchmark=10 * 1, additional_steps_for_max=0, reward_type="SIZE"):
+                 max_trials_per_benchmark=10, max_time_per_benchmark=10 * 1, additional_steps_for_max=0, reward_type="SIZE", reward_to_log="SIZE"):
+        if reward_type=="BOTH":
+            print(f"NOTE: Evaluating a model trained to optimize both for code size and energy efficiency. Just logging {reward_to_log}")
+                    
         if print_progress:
             print("Evaluating {0}:".format(model_name))
             
@@ -117,7 +120,7 @@ class Evaluation:
                                     steps_in_observation=True, reward_type=reward_type)
             
             if not is_random_policy:
-                model = actor_critic_network(env.observation_space.shape[0], env.action_space.n)
+                model = policy_critic_network(env.observation_space.shape[0], env.action_space.n)
                 model.load_state_dict(torch.load(f"models/{model_name}.model"))
             
             max_reward = 0
@@ -139,6 +142,11 @@ class Evaluation:
                         action = model.act(torch.tensor(obs).float())[0].item()
                     action_sequence.append(action)
                     obs, reward, done, info = env.step(action)
+                    if reward_to_log == "SIZE":
+                        reward = env.get_size_reward()
+                    elif reward_to_log == "NRG":
+                        reward = env.get_energy_reward()
+                    
                     running_reward += reward
                     cum_rewards.append(running_reward)
                 
@@ -153,6 +161,10 @@ class Evaluation:
             cum_of_max = []
             for action in best_action_sequence:
                 _, reward, done, _ = long_env.step(action)
+                if reward_to_log == "SIZE":
+                    reward = env.get_size_reward()
+                elif reward_to_log == "NRG":
+                    reward = env.get_energy_reward()
                 cum_of_max.append(reward + (cum_of_max[-1] if len(cum_of_max) > 0 else 0))
             while not done:
                 if is_random_policy:
@@ -160,6 +172,10 @@ class Evaluation:
                 else:
                     action = model.act(torch.tensor(obs).float())[0].item()
                 obs, reward, done, _ = long_env.step(action)
+                if reward_to_log == "SIZE":
+                    reward = env.get_size_reward()
+                elif reward_to_log == "NRG":
+                    reward = env.get_energy_reward()
                 cum_of_max.append(reward + (cum_of_max[-1] if len(cum_of_max) > 0 else 0))
             
             if max(cum_of_max) > max_reward:
