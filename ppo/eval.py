@@ -24,7 +24,9 @@ class Evaluation:
         output_list = np.array(input_list)
         return output_list.sum() / len(output_list)
     
-    def evaluate_baseline(benchmarks, print_progress=True, opt_mode='-Oz'):
+    def evaluate_baseline(benchmarks, print_progress=True, opt_mode='-Oz', reward_type="SIZE"):
+        assert(reward_type=="BOTH" or reward_type=="NRG" or reward_type=="SIZE")
+        
         if print_progress:
             print("Evaluating {0}:".format(opt_mode))
 
@@ -85,8 +87,14 @@ class Evaluation:
             nrg_reward = (initial_energy - total_energy)/ initial_energy
 
             # TODO: change rewards if needed
-            reward = bitcode_reward
-            # reward = nrg_reward
+            if reward_type == "SIZE":
+                reward = bitcode_reward
+            elif reward_type == "NRG":
+                reward = nrg_reward
+            elif reward_type == "BOTH":
+                reward = 0.5*bitcode_reward + 0.5*nrg_reward
+            else:
+                raise AssertionError
             
             performances.append(reward)
 
@@ -95,8 +103,8 @@ class Evaluation:
         # Switching to arithmetic mean because of negatives
         return Evaluation.arith_mean(performances), performances
 
-    def evaluate(benchmarks, model_name, print_progress=True,
-                 max_trials_per_benchmark=10, max_time_per_benchmark=10 * 1, additional_steps_for_max=0):
+    def evaluate(benchmarks, model_name, is_random_policy=False, print_progress=True,
+                 max_trials_per_benchmark=10, max_time_per_benchmark=10 * 1, additional_steps_for_max=0, reward_type="SIZE"):
         if print_progress:
             print("Evaluating {0}:".format(model_name))
             
@@ -104,12 +112,13 @@ class Evaluation:
         performances=[]
         
         for benchmark in benchmarks:
-            env = env_wrapper([benchmark], max_episode_steps=episode_len, steps_in_observation=True)
+            env = env_wrapper([benchmark], max_episode_steps=episode_len, steps_in_observation=True, reward_type=reward_type)
             long_env = env_wrapper([benchmark], max_episode_steps=episode_len + additional_steps_for_max,
-                                    steps_in_observation=True)
+                                    steps_in_observation=True, reward_type=reward_type)
             
-            model = actor_critic_network(env.observation_space.shape[0], env.action_space.n)
-            model.load_state_dict(torch.load(f"models/{model_name}.model"))
+            if not is_random_policy:
+                model = actor_critic_network(env.observation_space.shape[0], env.action_space.n)
+                model.load_state_dict(torch.load(f"models/{model_name}.model"))
             
             max_reward = 0
             best_action_sequence = []
@@ -124,7 +133,10 @@ class Evaluation:
                 cum_rewards = []
                 running_reward = 0
                 while not done:
-                    action = model.act(torch.tensor(obs).float())[0].item()
+                    if is_random_policy:
+                        action = env.action_space.sample()
+                    else:
+                        action = model.act(torch.tensor(obs).float())[0].item()
                     action_sequence.append(action)
                     obs, reward, done, info = env.step(action)
                     running_reward += reward
@@ -143,7 +155,10 @@ class Evaluation:
                 _, reward, done, _ = long_env.step(action)
                 cum_of_max.append(reward + (cum_of_max[-1] if len(cum_of_max) > 0 else 0))
             while not done:
-                action = model.act(torch.tensor(obs).float())[0].item()
+                if is_random_policy:
+                    action = env.action_space.sample()
+                else:
+                    action = model.act(torch.tensor(obs).float())[0].item()
                 obs, reward, done, _ = long_env.step(action)
                 cum_of_max.append(reward + (cum_of_max[-1] if len(cum_of_max) > 0 else 0))
             

@@ -20,9 +20,12 @@ class env_wrapper(gym.Env):
     """
 
     def __init__(self, benchmarks, max_episode_steps=None, steps_in_observation=False, patience=None,
-                 allowed_actions=None):
+                 allowed_actions=None, reward_type="SIZE"):
+        assert(reward_type=="BOTH" or reward_type=="NRG" or reward_type=="SIZE")
+
         self.env = gym.make("llvm-autophase-ic-v0", benchmark="{0}".format(benchmarks[0]))
         self.benchmarks = benchmarks
+        self.reward_type = reward_type
 
         # patience
         self.patience = patience
@@ -111,21 +114,20 @@ class env_wrapper(gym.Env):
         observation, bitcode_reward, done, info = self.env.step(action)
         # energy after
         
-        new_energy = self.calculate_current_energy()
+        if self.reward_type != "SIZE":
+            new_energy = self.calculate_current_energy()
         
-        nrg_reward = self.calculate_normalized_energy_reward(self.previous_energy, new_energy, self.initial_energy)
-        self.previous_energy = new_energy
-        
-        # TODO: change rewards if needed
-        # reward = 0.5*bitcode_reward + 0.5*nrg_reward
-        # reward = bitcode_reward
-        reward = nrg_reward
-        
-        # print("Normalized Energy Reward:", reward)
+            nrg_reward = self.calculate_normalized_energy_reward(self.previous_energy, new_energy, self.initial_energy)
+            self.previous_energy = new_energy
         
 
+        if self.reward_type == "SIZE":
+            reward = bitcode_reward
+        elif self.reward_type == "NRG":
+            reward = nrg_reward
+        elif self.reward_type == "BOTH":
+            reward = 0.5*bitcode_reward + 0.5*nrg_reward
         
-
         if self.patience is not None:
             self.fifo.append(reward)
             while len(self.fifo) > self.patience:
@@ -155,8 +157,9 @@ class env_wrapper(gym.Env):
 
         obs = self.env.reset()
         
-        self.initial_energy = self.calculate_current_energy()
-        self.previous_energy = self.initial_energy
+        if self.reward_type != "SIZE":
+            self.initial_energy = self.calculate_current_energy()
+            self.previous_energy = self.initial_energy
         
         if self.steps_in_observation:
             return np.concatenate((obs, np.array([self.max_steps])))

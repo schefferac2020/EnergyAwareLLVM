@@ -7,7 +7,7 @@ from ppo_algo import PPO
 
 benchmarks_all=["cbench-v1/adpcm",
             "cbench-v1/blowfish",
-            "cbench-v1/crc32",
+            "bench-v1c/crc32",
             "cbench-v1/ghostscript",
             "cbench-v1/ispell",
             "cbench-v1/jpeg-d",
